@@ -1,5 +1,6 @@
 {
   "name": "common-copier",
+  "description": "Copy and maintain identical boilerplate across projects",
   "version": "0.0.0",
   "main": "index.js",
   "bin": "index.js",

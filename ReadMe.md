@@ -1,65 +1,53 @@
 # Common Copier
 
-## Description
+Copy and maintain identical boilerplate across projects.
 
-If you have two almost identical projects, that share a lot of the common code, this helps keep those common parts as HARDLINKs so that if you make changes to common code, it's replicated the other project(s) as well.
+If you have two almost identical projects that share a lot of the common code, this helps keep those common parts as **hardlink**s of each other. When you make changes to common code, it's replicated the other project(s) as well.
+
+## Install
+
+```sh
+npm i common-copier
+```
 
 ## Usage Example
 
-Take two directories:
-
-* commonDir - which should contain the files that are common to both projects
-
-* projectDir - which is the directory on which this script will execute on
+Let's say there's 3 directories:
 
 ```sh
-common-copier -c ./common-dir -p ./project-dir
-```
+./project-dir1
+└── index.js // console.log('this is project 1')
 
-Let's suppose the structure for respective directories is as such:
+./project-dir2
+└── index.js // console.log('this is project 2')
 
-```
 ./common-dir
-└── base.js
-
-./project-dir
-└── index.js
+└── utils.js // console.log('this is common code')
 ```
 
-It will go through each file in `common-dir` (recursively), let's say the file `./common-dir/base.js`, if it doesn't find `./project-dir/base.js` it will be hardlink-ed.
-
-So the new structure would be like
-
+```sh
+common-copier --common ./common-dir --project ./project-dir1
+common-copier --common ./common-dir --project ./project-dir2
 ```
+
+```sh
+./project-dir1
+├── index.js // console.log('this is project 1')
+└── utils.js << hardlink >>
+
+./project-dir2
+├── index.js // console.log('this is project 2')
+└── utils.js << hardlink >>
+
 ./common-dir
-└── base.js << hardlink >>
-
-./project-dir
-├── base.js << hardlink >>
-└── index.js
+└── utils.js << hardlink >> // console.log('this is common code')
 ```
 
-If the hardlink gets broken for some reason, like by using Git and switching branches, when you run the script again and it finds that the file `./project-dir/base.js` already exists, it actually compares the `diff` to check whether the contents of the file have been altered or not. If not, it re-creates the hardlink. If the file actually has been altered, it just shows you the filename so that you can decide yourself. If you want the file from the `common` dir to override, you can simply delete  the file from `project` and run again, or if you decide to actually copy the changed file to `common`, then when you run the script again for a different project it'll let you decide again whether delete the outdated file from that project and copy the new file from `common`.
+It copies (makes hardlinks) of all files\* from `common-dir` to the `project-dir`(s).
 
-The direction of copy is always from `common` -> to `project` and only if either a file in `project` doesn't exist or the `diff` doesn't exist.
+\*It copies **only** files from the `common-dir` **if**:
 
-This way you can have two projects and a common "boilerplate".
+* file in the `project-dir` doesn't exist
+* or has no `diff` (i.e. both have same content)
 
-```
-./common-dir
-└── base.js << hardlink >>
-
-./project-A
-├── base.js << hardlink >>
-└── index.js
-
-./project-B
-├── base.js << hardlink >>
-└── index.js
-```
-
-
-
-
-
-
+As you can see in the above example `index.js` in both projects is still **different**. Any file whose diff isn't empty (theirr **contents are different**) are **not** hardlinked.
