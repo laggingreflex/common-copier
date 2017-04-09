@@ -1,142 +1,241 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const mkdirSync = require('mkdirp').sync;
-const path = require('path');
+const Path = require('path');
+const fs = require('fs-promise');
+const _ = require('lodash');
+const enquirer = require('enquire-simple');
+const chokidar = require('chokidar');
+const arrify = require('arrify');
+const untildify = require('untildify');
+const parseGitignore = require('parse-gitignore');
+const minimatch = require('minimatch');
+const wildstring = require('wildstring');
+const streamEqual = require('stream-equal');
+const copy = require('copy-concurrently');
+
+const defaultIgnored = ['.git', '*node_modules*', 'dist'];
+const defaultGitignore = ['.gitignore', '~/.gitignore'];
+
+const Diff = require('diff');
 const yargs = require('yargs')
   .option('common', {
     alias: 'c',
-    describe: 'dir/path of common folder'
   })
   .option('project', {
     alias: 'p',
-    describe: 'dir/path of project folder'
+  })
+  .option('ignored', {
+    alias: 'i',
+    type: 'array',
+    default: defaultIgnored,
+  })
+  .option('gitignore', {
+    alias: 'gi',
+    type: 'array',
+    default: defaultGitignore,
+  })
+  .option('confirm', {
+    type: 'boolean',
+    default: true,
+  })
+  .option('no-confirm', {
+    alias: 'y',
+    type: 'boolean',
+  })
+  .option('dry-run', {
+    alias: 'd',
+    type: 'boolean',
+  })
+  .option('help', {
+    alias: ['h', '?'],
+    type: 'boolean',
   })
   .argv
-const wrench = require('wrench');
-const Diff = require('diff');
+
+function usage() {
+  console.log(`
+    common-copier <from-common-folder> <to-project-folder> [options]
+
+      -c, --common, 1st arg             From common folder
+      -p, --project, 2nd arg            To project folder
+      -i, --ignored                     dir(s)/file(s) to ignore (glob/wildcard)
+                                        Default: ${defaultIgnored}
+      -g, --gitignore                   choose/append --ignored files from .gitignore(-like) files
+                                        Default: ${defaultGitignore}
+      -y, --no-confirm                  Don't prompt for confirmation
+      -d, --dry-run                     Do not make any changes
+      -h, /?, --help                    Show this help message
+  `);
+}
+
+if (yargs.help) {
+  usage();
+  process.exit(0);
+}
 
 const commonDir = yargs.common || yargs._[0];
 const projectDir = yargs.project || yargs._[1];
 
-let missingArgErrors = 0;
-if (!commonDir) {
-  console.error('Required argument missing: --commonDir="xxx", -c "xxx", or 1st argument');
-  missingArgErrors++;
-}
-if (!projectDir) {
-  console.error('Required argument missing: --projectDir="xxx", -p "xxx", or 2nd argument');
-  missingArgErrors++;
-}
-if (missingArgErrors) {
-  process.exit(missingArgErrors);
-}
-
-const common = file => path.join(commonDir, file);
-const project = file => path.join(projectDir, file);
-
-console.log('Checking directories...');
-let commonFiles, projectFiles, readDirErrors = 0;
-try {
-  console.log('Reading commonFiles...');
-  commonFiles = wrench.readdirSyncRecursive(commonDir);
-} catch (err) {
-  console.error('Couldn\'t read commonDir.', err.message);
-  readDirErrors++;
-}
-try {
-  console.log('Reading projectDir...');
-  fs.readdirSync(projectDir);
-} catch (err) {
-  console.error('Couldn\'t read projectDir.', err.message);
-  readDirErrors++;
-}
-if (readDirErrors) {
-  process.exit(readDirErrors);
+if (!(commonDir && projectDir)) {
+  usage();
+  if (!commonDir) {
+    console.error('Required argument missing: --common="xxx", -c "xxx", or 1st argument');
+  }
+  if (!projectDir) {
+    console.error('Required argument missing: --project="xxx", -p "xxx", or 2nd argument');
+  }
+  process.exit(1);
 }
 
 
-const errs = [];
-const diffFiles = [];
-const sameFiles = [];
-const noexFiles = [];
-for (const file of commonFiles) {
-  try {
-    const commonFile = common(file);
-    const projectFile = project(file);
-    const commonFileText = fs.readFileSync(commonFile, 'utf8');
-    try {
-      var projectFileText = fs.readFileSync(projectFile, 'utf8');
-    } catch (err) {
-      noexFiles.push(file);
-      continue;
-    }
-    const diffs = Diff.diffChars(commonFileText, projectFileText);
-    let actualDiffs = [];
-    for (const diff of diffs) {
-      if (diff.added || diff.removed) {
-        actualDiffs.push(diff);
-      }
-    }
-    if (actualDiffs.length) {
-      diffFiles.push({ file, diffs: actualDiffs });
+const ignored = _.uniq(arrify(yargs.ignored.concat(defaultIgnored)));
+const gitignore = _.uniq(arrify(yargs.gitignore.concat(defaultGitignore)))
+  .map(untildify)
+  .reduce((p, c) => {
+    if (Path.isAbsolute(c)) {
+      p.push(c)
     } else {
-      sameFiles.push(file);
+      p.push(
+        Path.join(commonDir, c),
+        Path.join(projectDir, c)
+      )
     }
-  } catch (err) { errs.push({ file, err }) }
+    return p;
+  }, []);
+
+ignored.push.apply(ignored, _.flatten(gitignore.map(parseGitignore)));
+
+if (yargs.noConfirm) {
+  yargs.confirm = false
 }
 
-const linkableFiles = sameFiles.concat(noexFiles);
-const linkErrs = [];
+const common = file => Path.join(commonDir, file);
+const project = file => Path.join(projectDir, file);
 
-console.log('Creating files...');
-for (const file of linkableFiles) {
-  try {
+function sampleLog(sample, { size = 10, prefix = ' ' } = {}) {
+  _.sampleSize(sample, 10).forEach(f => console.log(prefix, f));
+  if (sample.length > 10) {
+    console.log(`  + ${sample.length-10} more`);
+  }
+}
+
+function getFiles(dir) {
+  const files = [];
+  // const excludes = arrify(opts.excludes)
+  // console.log(`excludes:`, { ignored });
+
+  return new Promise((resolve, reject) => {
+    const watcher = chokidar.watch(dir, { ignored, persistent: false, cwd: dir })
+      .on('add', (path) => {
+        if (ignored.some(e => path.includes(e) || minimatch(path, e) || wildstring.match(e, path))) {
+          // console.log('Excluded', path);
+          return;
+        }
+        // console.log('Added', path);
+        files.push(path);
+      })
+      .on('ready', () => {
+        watcher.close()
+        resolve(files)
+      })
+  })
+
+  return new Promise((resolve, reject) => klaw(dir)
+    .on('data', ({ path, stats }) => {
+      if (excludes.some(e => path.includes(e) || minimatch(path, e) || wildstring.match(e, path))) {
+        if (!opts.verbose) {
+          // console.log('Excluded', path);
+        }
+        return;
+      }
+      if (!opts.verbose) {
+        console.log('Added', path);
+      }
+      files.push(path);
+    })
+    .on('end', () => resolve(files))
+    .on('error', reject));
+}
+
+async function classify(files) {
+  const different = [];
+  const same = [];
+  const noExist = [];
+
+  await Promise.all(files.map(async(file) => {
     const commonFile = common(file);
     const projectFile = project(file);
-    const projectFileBaseDir = path.dirname(projectFile);
+
     try {
-      fs.readdirSync(projectFileBaseDir);
-    } catch (err) {
-      console.error('  Creating', projectFileBaseDir);
-      try {
-        mkdirSync(projectFileBaseDir);
-      } catch (err) {
-        console.error('  Couldn\'t create', projectFileBaseDir);
-        throw err;
-      }
+      await fs.access(projectFile, fs.constants.F_OK)
+    } catch (noop) {
+      noExist.push(file);
+      return;
     }
-    try {
-      fs.unlinkSync(projectFile);
-    } catch (err) {
-        // console.error('  Couldn\'t delete', projectFile);
-        // throw err;
+
+    if (await streamEqual(
+        fs.createReadStream(commonFile),
+        fs.createReadStream(projectFile)
+      )) {
+      same.push(file);
+    } else {
+      different.push(file);
     }
-    try {
-      console.log('  Creating', projectFile);
-      fs.linkSync(commonFile, projectFile);
-    } catch (err) {
-        console.error('  Couldn\'t create link', projectFile, '<<==>>', commonFile);
-        throw err;
-    }
-  } catch (err) {
-    linkErrs.push({ file, err })
-  }
+  }));
+
+  return { different, same, noExist };
 }
 
-console.log('====================================');
 
-console.log(`${linkableFiles.length-linkErrs.length}/${linkableFiles.length} linkable files re-linked`);
-if (linkErrs.length) {
-  console.error(`${linkErrs.length}/${linkableFiles.length} linkable files couldn't be re-linked`);
-  for (const err of linkErrs) {
-    console.error('  ', err.file, err.err.message);
-  }
+async function create(files) {
+  await Promise.all(files.map(async(file) => {
+    const commonFile = common(file);
+    const projectFile = project(file);
+    const projectFileBaseDir = Path.dirname(projectFile);
+    await fs.ensureDir(projectFileBaseDir);
+    // console.log(file);
+    await fs.remove(projectFile);
+    await fs.link(commonFile, projectFile);
+  }));
 }
 
-if (diffFiles.length) {
-  console.log(`${diffFiles.length} files had some changes:`);
-  for (const diffFile of diffFiles) {
-    console.log('  ', diffFile.file);
+async function main() {
+  console.log('Getting files...');
+  const commonFiles = await getFiles(commonDir);
+  console.log(`${commonFiles.length} files found`);
+  console.log('Classifying...');
+  const { different, same, noExist } = await classify(commonFiles);
+  // console.log({ different: different.length, same: same.length, noExist: noExist.length, });
+
+  const linkableFiles = same.concat(noExist);
+
+  if (!linkableFiles.length) {
+    console.log('Error: No linkable files found.');
+    return;
   }
+
+  if (different.length) {
+    console.log(`${different.length} different files will be left untouched:`);
+    sampleLog(different, { prefix: '  [diff]' })
+  }
+  if (same.length) {
+    console.log(`${same.length} identical files will be linked:`);
+    sampleLog(same, { prefix: '  [same]' })
+  }
+  if (noExist.length) {
+    console.log(`${noExist.length} non-existing files will be linked:`);
+    sampleLog(noExist, { prefix: '  [new] ' })
+  }
+  console.log('From:', Path.resolve('.', commonDir));
+  console.log('To->:', Path.resolve('.', projectDir));
+
+  if (yargs.dryRun || (yargs.confirm && !await enquirer.confirm('Proceed', true))) {
+    console.log('No changes were made.');
+    return;
+  }
+
+  await create(linkableFiles);
+  console.log('Done!');
 }
+
+main().catch(console.error)
