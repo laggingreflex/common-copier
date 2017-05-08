@@ -88,7 +88,7 @@ if (!(commonDir && projectDir)) {
 }
 
 
-const ignored = _.uniq(arrify(yargs.ignored.concat(defaultIgnored)));
+let ignored = _.uniq(arrify(yargs.ignored.concat(defaultIgnored)));
 const gitignore = _.uniq(arrify(yargs.gitignore.concat(defaultGitignore)))
   .map(untildify)
   .reduce((p, c) => {
@@ -104,6 +104,8 @@ const gitignore = _.uniq(arrify(yargs.gitignore.concat(defaultGitignore)))
   }, []);
 
 ignored.push.apply(ignored, _.flatten(gitignore.map(parseGitignore)));
+const antiIgnored = ignored.filter(i => i.charAt(0) === '!').map(i => i.substr(1));
+ignored = ignored.filter(i => i.charAt(0) !== '!');
 
 if (yargs.noConfirm) {
   yargs.confirm = false
