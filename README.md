@@ -11,21 +11,22 @@ npm i common-copier
 ## Usage
 
 ```
-$ common-copier <from-common-folder> <to-project-folder>
+$ common-copier <from-common-dir>
 ```
-
-### Options
-
 ```
--c, --common, 1st arg             From common folder
--p, --project, 2nd arg            To project folder
--i, --ignored                     dir(s)/file(s) to ignore (glob/wildcard)
-                                  Default: ${defaultIgnored}
--g, --gitignore                   choose/append --ignored files from .gitignore(-like) files
-                                  Default: ${defaultGitignore}
--y, --no-confirm                  Don't prompt for confirmation
--d, --dry-run                     Do not make any changes
--h, /?, --help                    Show this help message
+Options:
+  --version          Show version number                               [boolean]
+  --commonDir, -c    (From) common dir [required]
+  --projectDir, -p   (To) project dir                          [default: "."]
+  --fileLimit        Limit on number of files                     [default: 500]
+  --timeLimit        Limit on seconds spent                        [default: 10]
+  --ignored, -i      dir(s)/file(s) to ignore (glob/wildcard)
+                             [array] [default: [".git","*node_modules*","dist"]]
+  --gitignore, --gi  choose/append --ignored files from .gitignore(-like) files
+                                [array] [default: [".gitignore","~/.gitignore"]]
+  --yes, -y          Don't prompt for confirmation                     [boolean]
+  --dry, -d          Do not make any changes (dry run)                 [boolean]
+  --help             Show help                                         [boolean]
 ```
 
 ## Example
