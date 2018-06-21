@@ -9,6 +9,8 @@ const fn = require('./functions');
 
 module.exports = async config => {
 
+  await fn.gitCheck(config);
+
   const ignored = await fn.processIgnores(config);
 
   console.log('Getting files...');
@@ -44,6 +46,7 @@ module.exports = async config => {
     console.log('No changes were made.');
     return;
   }
+
 
   await fn.create(linkableFiles);
   console.log('Done!');

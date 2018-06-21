@@ -48,6 +48,11 @@ const options = {
   //   type: 'boolean',
   //   default: true,
   // },
+  gitCheck: {
+    description: 'Check for uncommitted changes',
+    type: 'boolean',
+    default: true,
+  },
   dry: {
     description: 'Do not make any changes (dry run)',
     alias: 'd',

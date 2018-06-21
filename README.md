@@ -16,8 +16,8 @@ $ common-copier <from-common-dir>
 ```
 Options:
   --version          Show version number                               [boolean]
-  --commonDir, -c    (From) common dir [required]
-  --projectDir, -p   (To) project dir                          [default: "."]
+  --commonDir, -c    (From) common folder [required]
+  --projectDir, -p   (To) project folder                          [default: "."]
   --fileLimit        Limit on number of files                     [default: 500]
   --timeLimit        Limit on seconds spent                        [default: 10]
   --ignored, -i      dir(s)/file(s) to ignore (glob/wildcard)
@@ -25,6 +25,7 @@ Options:
   --gitignore, --gi  choose/append --ignored files from .gitignore(-like) files
                                 [array] [default: [".gitignore","~/.gitignore"]]
   --yes, -y          Don't prompt for confirmation                     [boolean]
+  --gitCheck         Check for uncommitted changes     [boolean] [default: true]
   --dry, -d          Do not make any changes (dry run)                 [boolean]
   --help             Show help                                         [boolean]
 ```
