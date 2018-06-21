@@ -12,10 +12,10 @@ module.exports = async config => {
       if (Path.isAbsolute(c)) {
         p.push(c);
       } else {
-        p.push(
-          Path.join(config.commonDir, c),
+        p.push(...[
+          config.commonDir && Path.join(config.commonDir, c),
           Path.join(config.projectDir, c)
-        );
+        ].filter(Boolean));
       }
       return p;
     }, []);

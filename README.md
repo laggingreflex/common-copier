@@ -11,23 +11,28 @@ npm i common-copier
 ## Usage
 
 ```
-$ common-copier <from-common-dir>
-```
-```
+common-copier <commonDir> [projectDir]
+
+Link files from commonDir to projectDir
+
+Commands:
+  common-copier link <commonDir> [projectDir]  Link files from commonDir to projectDir  [default]
+  common-copier unlink [projectDir]            Link files from commonDir to projectDir  [aliases: u]
+
+Positionals:
+  commonDir   (From) common folder [required]
+  projectDir  (To) project folder  [default: "."]
+
 Options:
-  --version          Show version number                               [boolean]
-  --commonDir, -c    (From) common folder [required]
-  --projectDir, -p   (To) project folder                          [default: "."]
-  --fileLimit        Limit on number of files                     [default: 500]
-  --timeLimit        Limit on seconds spent                        [default: 10]
-  --ignored, -i      dir(s)/file(s) to ignore (glob/wildcard)
-                             [array] [default: [".git","*node_modules*","dist"]]
-  --gitignore, --gi  choose/append --ignored files from .gitignore(-like) files
-                                [array] [default: [".gitignore","~/.gitignore"]]
-  --yes, -y          Don't prompt for confirmation                     [boolean]
-  --gitCheck         Check for uncommitted changes     [boolean] [default: true]
-  --dry, -d          Do not make any changes (dry run)                 [boolean]
-  --help             Show help                                         [boolean]
+  --help             Show help  [boolean]
+  --version          Show version number  [boolean]
+  --fileLimit        Limit on number of files  [default: 500]
+  --timeLimit        Limit on seconds spent  [default: 10]
+  --ignored, -i      dir(s)/file(s) to ignore (glob/wildcard)  [array] [default: [".git","*node_modules*","dist"]]
+  --gitignore, --gi  choose/append --ignored files from .gitignore(-like) files  [array] [default: [".gitignore","~/.gitignore"]]
+  --yes, -y          Don't prompt for confirmation  [boolean]
+  --gitCheck         Check for uncommitted changes  [boolean] [default: true]
+  --dry, -d          Do not make any changes (dry run)  [boolean]
 ```
 
 ## Example

@@ -3,12 +3,12 @@ const Yargs = require('yargs');
 const untildify = require('untildify');
 const utils = require('./utils');
 
-const defaults = {
+const defaults = exports.defaults = {
   ignored: ['.git', '*node_modules*', 'dist'],
   gitignore: ['.gitignore', '~/.gitignore'],
 };
 
-const options = {
+const options = exports.options = {
   commonDir: {
     description: '(From) common folder [required]',
     alias: 'c',
@@ -59,11 +59,34 @@ const options = {
     alias: 'd',
     type: 'boolean',
   },
+  unlink: {
+    description: 'Unlink all links',
+    alias: 'u',
+    type: 'boolean',
+  },
 };
 
-module.exports = async (argv = process.argv.slice(2)) => {
-  const yargs = Yargs(argv).options(options).help();
-  const { argv: config } = yargs;
+exports.yargs = async (argv = process.argv.slice(2)) => {
+  const config = {};
+  const yargs = Yargs(argv);
+  // yargs.options(options)
+  yargs.help();
+
+
+
+  yargs.command('unlink', 'Unlink all links', (yargs) => {
+    // yargs.argv
+    // yargs.argv.unlink = yargs.argv.u = true;
+    // console.log(`yargs.argv.unlink:`, yargs.argv.unlink);
+    config.unlink = true;
+    console.log(`config.unlink:`, config.unlink);
+  });
+
+  console.log(`config.unlink:`, config.unlink);
+  Object.assign(config, yargs.argv, config);
+  console.log(`config.unlink:`, config.unlink);
+  process.exit()
+
   config.confirm = !(config.y || config.yes);
   if (!config.commonDir) {
     if (config._[0]) {
