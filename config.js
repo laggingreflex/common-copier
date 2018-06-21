@@ -1,5 +1,6 @@
 const Path = require('path');
 const Yargs = require('yargs');
+const untildify = require('untildify');
 const utils = require('./utils');
 
 const defaults = {
@@ -72,8 +73,11 @@ module.exports = async (argv = process.argv.slice(2)) => {
     }
   }
 
-  if (Path.resolve(config.commonDir) === Path.resolve(config.projectDir)) {
-    throw new utils.Error(`commonDir and projectDir must be different ('${config.commonDir}' == '${config.projectDir}')`);
+  config.commonDir = Path.resolve(untildify(config.commonDir));
+  config.projectDir = Path.resolve(untildify(config.projectDir));
+
+  if (config.commonDir === config.projectDir) {
+    throw new utils.Error(`commonDir and projectDir must be different ('${config.commonDir}')`);
   }
 
   config.defaults = defaults;

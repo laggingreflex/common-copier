@@ -13,9 +13,7 @@ module.exports = async config => {
 
   const ignored = await fn.processIgnores(config);
 
-  console.log('Getting files...');
   const commonFiles = await fn.getFiles(config.commonDir, { ignored }, config);
-  // console.log(`commonFiles:`, commonFiles);
 
   console.log(`${commonFiles.length} files found`);
   console.log('Classifying...');
@@ -48,7 +46,7 @@ module.exports = async config => {
   }
 
 
-  await fn.create(linkableFiles);
+  await fn.create(linkableFiles, config);
   console.log('Done!');
 
 }

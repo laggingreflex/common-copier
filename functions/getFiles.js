@@ -4,6 +4,7 @@ const wildstring = require('wildstring');
 const utils = require('../utils');
 
 module.exports = (dir, { ignored }, config) => new Promise(async (resolve, reject) => {
+  console.log('Reading', dir);
   const files = [];
   const watcher = chokidar.watch(dir, { ignored, persistent: false, cwd: dir });
 
