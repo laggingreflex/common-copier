@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 const Path = require('path');
-process.argv.splice(1, 1, require('./package').name);
 const yargs = require('yargs');
 const untildify = require('untildify');
 const modules = require('.');
@@ -123,6 +122,7 @@ function HelpError(msg) {
   throw new utils.Error(msg);
 }
 
+yargs.scriptName(require('./package').name);
 yargs.options(options);
 yargs.command(commands.link);
 yargs.command(commands.unlink);
