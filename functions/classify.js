@@ -10,10 +10,11 @@ module.exports = async (files, { commonDir, projectDir }) => {
   const different = [];
   const same = [];
   const noExist = [];
+  const linked = [];
 
   await Promise.all(files.map(async (file) => {
-    const commonFile = common(file);
     const projectFile = project(file);
+    const commonFile = common(file);
 
     try {
       await fs.access(projectFile, fs.constants.F_OK)
@@ -22,15 +23,26 @@ module.exports = async (files, { commonDir, projectDir }) => {
       return;
     }
 
-    if (await streamEqual(
-        fs.createReadStream(commonFile),
-        fs.createReadStream(projectFile)
-      )) {
+    const [projectFileStats, commonFileStats] = await Promise.all([
+      fs.stat(projectFile),
+      fs.stat(commonFile),
+    ]);
+    if (projectFileStats.ino === commonFileStats.ino) {
+      linked.push(file);
+      return;
+    }
+
+    const isStreamEqual = await streamEqual(
+      fs.createReadStream(projectFile),
+      fs.createReadStream(commonFile)
+    );
+
+    if (isStreamEqual) {
       same.push(file);
     } else {
       different.push(file);
     }
   }));
 
-  return { different, same, noExist };
+  return { different, same, noExist, linked };
 };
