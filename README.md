@@ -5,7 +5,7 @@ Copy and maintain identical common code across different projects.
 ## Install
 
 ```sh
-npm i common-copier
+npm i -g common-copier
 ```
 
 ## Usage
