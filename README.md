@@ -11,28 +11,29 @@ npm i -g common-copier
 ## Usage
 
 ```
-common-copier <commonDir> [projectDir]
+common-copier <commonDir> [projectDir=.]
 
 Link files from commonDir to projectDir
 
 Commands:
-  common-copier link <commonDir> [projectDir]  Link files from commonDir to projectDir  [default]
-  common-copier unlink [projectDir]            Link files from commonDir to projectDir  [aliases: u]
-
-Positionals:
-  commonDir   (From) common folder [required]
-  projectDir  (To) project folder  [default: "."]
+  common-copier <commonDir> [projectDir=.]     Link files from commonDir to projectDir  [default]
+  common-copier unlink [projectDir=.]          Dereference all symlinks
 
 Options:
-  --help             Show help  [boolean]
-  --version          Show version number  [boolean]
-  --fileLimit        Limit on number of files  [default: 500]
-  --timeLimit        Limit on seconds spent  [default: 10]
-  --ignored, -i      dir(s)/file(s) to ignore (glob/wildcard)  [array] [default: [".git","*node_modules*","dist"]]
-  --gitignore, --gi  choose/append --ignored files from .gitignore(-like) files  [array] [default: [".gitignore","~/.gitignore"]]
-  --yes, -y          Don't prompt for confirmation  [boolean]
-  --gitCheck         Check for uncommitted changes  [boolean] [default: true]
-  --dry, -d          Do not make any changes (dry run)  [boolean]
+  --help, -h     Show help  [boolean]
+  --version      Show version number  [boolean]
+  --commonDir    (From) common folder  [string]
+  --projectDir   (To) project folder  [string] [default: "."]
+  --fileLimit    Limit on number of files  [number] [default: 500]
+  --ignored, -i  dir(s)/file(s) to ignore (glob/wildcard)  [array] [default: [".git","*node_modules*","dist"]]
+  --gitignore    .gitignore(-like) files  [array] [default: ["~/.gitignore",".gitignore"]]
+  --yes, -y      Assume 'yes' for all prompts  [boolean]
+  --dry, -d      Do not make any changes (dry run)  [boolean]
+  --dirty        Don't check for uncommitted local changes  [boolean]
+  --config       Config files to load settings from  [array] [default: ["~/.common-copier",".common-copier"]]
+  --cwd          Current working directory  [string] [default: "<cwd>"]
+  --silent, -s   Don't log unnecessarily  [boolean]
+  --debug, -d    Log debug messages  [boolean]
 ```
 
 ## Example
@@ -41,15 +42,15 @@ Let's say you have a boilerplate and 2 projects based off of it:
 
 ```
 ./common-dir
-└── utils.js // console.log('this is common code') // same in all
-
-./project-dir1
-├── index.js // console.log('this is project 1')
-└── utils.js // console.log('this is common code') // same in all
-
-./project-dir2
-├── index.js // console.log('this is project 2')
-└── utils.js // console.log('this is common code') // same in all
+└── utils.js  ─────┐
+                   │
+./project-dir1     │
+├── index.js       │
+└── utils.js  ─────┤ common "utils.js" file
+                   │
+./project-dir2     │
+├── index.js       │
+└── utils.js  ─────┘
 ```
 
 By doing this:
@@ -62,16 +63,16 @@ common-copier ./common-dir ./project-dir2
 You'll get:
 
 ```
-./project-dir1
-├── index.js // console.log('this is project 1')
-└── utils.js << hardlink >>
-
-./project-dir2
-├── index.js // console.log('this is project 2')
-└── utils.js << hardlink >>
-
 ./common-dir
-└── utils.js << hardlink >> // console.log('this is common code')
+└── utils.js  ═════╗
+                   ║
+./project-dir1     ║
+├── index.js       ║
+└── utils.js  ═════╣ <hard-linked>
+                   ║
+./project-dir2     ║
+├── index.js       ║
+└── utils.js  ═════╝
 ```
 
 `./common-dir/utils.js` has been hardlinked across both projects. But `index.js` in either of the projects has stayed the same (because they were different).
@@ -111,4 +112,4 @@ In summary, it copies (makes hardlinks) of files\* from `common-dir` to the `pro
 
 Checking out files from Git may destroy hardlinks. Run `common-copier` again to maintain hardlinks.
 
-Tested only on Windows. Let me know if you were able to use it in other OSes successfully. It uses [fs.link](https://nodejs.org/api/fs.html#fs_fs_link_existingpath_newpath_callback)
+Tested on Windows only. Uses [fs.link](https://nodejs.org/api/fs.html#fs_fs_link_existingpath_newpath_callback)
