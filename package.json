@@ -1,23 +1,16 @@
 {
   "name": "common-copier",
   "description": "Copy and maintain identical boilerplate across projects",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "main": "lib/index.js",
   "bin": "lib/bin.js",
   "repository": "laggingreflex/common-copier",
   "dependencies": {
-    "arrify": "^2.0.1",
-    "chokidar": "^3.3.1",
-    "copy-concurrently": "^1.0.5",
-    "enquire-simple": "^0.3.0",
+    "class-cli": "^0.1.0",
     "fs-extra": "^8.1.0",
-    "lodash": "^4.17.15",
-    "minimatch": "^3.0.4",
+    "micromatch": "^4.0.2",
     "parse-gitignore": "^1.0.1",
     "simple-git": "^1.129.0",
-    "stream-equal": "^1.1.1",
-    "untildify": "^4.0.0",
-    "wildstring": "^1.0.9",
-    "yargs": "^14.2.2"
+    "stream-equal": "^1.1.1"
   }
 }
