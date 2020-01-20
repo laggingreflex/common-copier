@@ -11,13 +11,11 @@ npm i -g common-copier
 ## Usage
 
 ```
-common-copier <commonDir> [projectDir=.]
-
-Link files from commonDir to projectDir
+common-copier [command]
 
 Commands:
-  common-copier <commonDir> [projectDir=.]     Link files from commonDir to projectDir  [default]
-  common-copier unlink [projectDir=.]          Dereference all symlinks
+  common-copier link <commonDir> [projectDir=.]  Link files from commonDir to projectDir
+  common-copier unlink [projectDir=.]            Dereference all symlinks
 
 Options:
   --help, -h     Show help  [boolean]
