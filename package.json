@@ -6,7 +6,7 @@
   "bin": "lib/bin.js",
   "repository": "laggingreflex/common-copier",
   "dependencies": {
-    "class-cli": "^0.2.0",
+    "class-cli": "^0.3.0",
     "fs-extra": "^8.1.0",
     "micromatch": "^4.0.2",
     "simple-git": "^1.129.0",
