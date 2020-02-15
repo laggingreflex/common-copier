@@ -1,7 +1,7 @@
 {
   "name": "common-copier",
   "description": "Copy and maintain identical boilerplate across projects",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "main": "lib/index.js",
   "bin": "lib/bin.js",
   "repository": "laggingreflex/common-copier",
